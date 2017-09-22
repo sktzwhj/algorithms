@@ -16,7 +16,7 @@ public:
     bool hasCycle(ListNode *head) {
 
         set<ListNode*> seenPtr;
-        while(head->next!=NULL)
+        while(head!=NULL)
         {
             if(seenPtr.find(head)!=seenPtr.end())
                 return 1;
