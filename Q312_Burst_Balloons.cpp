@@ -8,7 +8,7 @@ using namespace std;
 
 /*
  * seems this is a typical dynamic programming problem.
- * the spirit of dynamic programming is to use some space to store the partial results which might be recomputed for several times. 
+ * the spirit of dynamic programming is to use some space to store the partial results which might be recomputed for several times.
  */
 
 class Solution {
