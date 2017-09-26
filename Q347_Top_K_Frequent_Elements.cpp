@@ -11,7 +11,7 @@ using namespace std;
 class Solution {
 public:
     /*
-     * remember the return should be a bool... made a so stupid mistake to make it an int. 
+     * remember the return should be a bool... made a so stupid mistake to make it an int.
      */
     static bool cmp(pair<int,int> a, pair<int,int> b)
     {
