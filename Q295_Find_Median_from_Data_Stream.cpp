@@ -13,154 +13,46 @@
 #include<iostream>
 #include<vector>
 using namespace std;
+#include<priority_queue>
 
-class MedianFinder {
-public:
-    /** initialize your data structure here. */
-    MedianFinder() {
-
-    }
-
-    void printVec()
-    {
-        for(int i = 0; i < stream.size(); i++)
-            cout<<stream[i]<<" "<<endl;
-    }
-
-    void addNum(int num) {
-        if (stream.size()==0)
-        {
-            stream.push_back(num);
-            return;
-        }
-
-        else
-        {
-            for(vector<int>::iterator it = stream.begin(); it != stream.end(); it++)
-            {
-                if(*it < num)
-                    continue;
-                else
-                {
-                    stream.insert(it,num);
-                    return;
-                }
-
-            }
-        }
-        stream.push_back(num);
-
-    }
-
-    double findMedian() {
-        int streamLen = stream.size();
-        double median;
-        if(streamLen%2==0)
-            median = ((double)stream[streamLen/2 - 1] + (double)stream[streamLen/2])/2;
-        else
-            median = (double)stream[(streamLen-1)/2];
-        return median;
-    }
-private:
-    vector<int> stream;
-};
 
 //sliding window solution
-
 class MedianFinder {
+
+    priority_queue<int> left;
+    priority_queue<int, vector<int>, greater<int> > right;
 public:
-    /** initialize your data structure here. */
-    MedianFinder() {
 
-    }
-
-    void printQ()
-    {
-        cout<<"ideq size is "<<ideq.size()<<endl;
-        cout<<"ideq[0]:"<<ideq[0]<<" ideq[1]:"<<ideq[1]<<endl;
-    }
-
+// Adds a number into the data structure.
     void addNum(int num) {
-        streamLen++;
-        if(ideq.size() < 2)
-        {
-            median_index = 0;
-            if(ideq.empty())
-                ideq.push_back(num);
-            else if(num > ideq[0])
-                ideq.push_back(num);
-            else
-                ideq.push_front(num);
+        if(left.empty()){
+            left.push(num);
+            return;
         }
-        else
-        {
-            if(num >= ideq[1] )
-            {
-                if(median_index == 1)
-                {
-                    ideq.push_back(num);
-                    ideq.pop_front();
-
-                    if(streamLen%2==1)
-                        median_index = 1;
-                }
-                else
-                    median_index = 1;
-
+        if(num <= left.top()){
+            left.push(num);
+            if(left.size()-right.size() > 1){
+                right.push(left.top());
+                left.pop();
             }
-            else if(num <= ideq[0])
-            {
-                if(median_index==0)
-                {
-                    ideq.push_front(num);
-                    ideq.pop_back();
-
-                    if(streamLen%2==1)
-                        median_index = 0;
-                }
-                else
-                    median_index = 0;
-
-
+        }
+        else{
+            right.push(num);
+            if(right.size()-left.size() > 1){
+                left.push(right.top());
+                right.pop();
             }
-            else
-            {
-                if(streamLen%2==0){
-                    if(median_index == 0)
-                    {
-                        ideq.pop_back();
-                        ideq.push_back(num);
-                    }
-                    else
-                    {
-                        ideq.pop_front();
-                        ideq.push_front(num);
-                    }
-
-                }
-                else
-                {
-                    ideq.pop_front();
-                    ideq.push_front(num);
-                    median_index = 0;
-                }
-
-            }
-
         }
     }
 
+// Returns the median of current data stream
     double findMedian() {
-        if(streamLen%2==0)
-            return ((double)ideq[0]+(double)ideq[1])/2;
-        else
-            return (double)ideq[median_index];
-
+        if(left.size() == right.size()){
+            return (left.top()+right.top())/2.0;
+        }
+        else if(left.size() > right.size()) return left.top();
+        else return right.top();
     }
-private:
-    deque<int> ideq;
-    int streamLen = 0;
-    int median_index;
 };
 
 int main()
