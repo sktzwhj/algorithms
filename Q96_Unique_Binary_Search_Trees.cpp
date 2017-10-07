@@ -7,7 +7,7 @@ using namespace std;
 
 /*
  * For a valid BST structure, once the left subtree and the right subtree is determined, the root will have only once choice.
- * So we can get a recursion formula. Then this becomes a dynamic programming problem. 
+ * So we can get a recursion formula. Then this becomes a dynamic programming problem.
  */
 class Solution {
 public:
