@@ -15,6 +15,9 @@ class Solution {
 public:
     int findMaxForm(vector<string>& strs, int m, int n) {
         //we first initialize the dp memp
+        //do not use hash. it is too slow
+        vector<vector<int>> dpTable = vector<vector<int>>(m+1,vector<int>(n+1,0));
+
         for(int i = 0; i <=m; i++)
             for(int j = 0; j <=n; j++)
             {
@@ -40,9 +43,6 @@ public:
         }
         return dpTable[m][n];
     }
-
-private:
-    unordered_map<int,unordered_map<int, int>> dpTable = unordered_map<int, unordered_map<int,int>>();
 
 
 };
