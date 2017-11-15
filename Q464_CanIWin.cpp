@@ -5,6 +5,7 @@
  * requires debugging
  */
 #include<unordered_map>
+#include<iostream>
 using namespace std;
 
 class Solution {
@@ -16,39 +17,35 @@ public:
             return false;
         int remain = desiredTotal;
         int mask = 0;
-        int run = 0;
         //let player 1 to play first
 
-        return oneStep(remain, mask, maxChoosableInteger, run);
+        return oneStep(remain, mask, maxChoosableInteger);
 
 
     }
-    bool oneStep(int remain, int mask, int maxChoosableInteger, int run)
+    bool oneStep(int remain, int mask, int maxChoosableInteger)
     {
         if(history.find(mask) != history.end())
             return history[mask];
-        for(int i = 1; i <= maxChoosableInteger; i++){
-            if((1 << i)&mask==0){
-                if(remain <= i){
-                    mask |=(1<<i);
+        for(int i = 0; i < maxChoosableInteger; i++){
+            int curr = (1<<i);
+            if((curr&mask)==0){
+                if(remain <= (i+1) || !oneStep(remain - (i+1), mask|curr, maxChoosableInteger)){
+                    history[mask] = true;
                     return true;
                 }
-                else{
-                    mask = mask|(1<<i);
-                    remain -= i;
-                    history[mask] = oneStep(remain, mask, maxChoosableInteger, run);
-                    if(history[mask]==1){
-                        return false;
-                    }
-                    else
-                        return true;
-                }
-
             }
         }
+        history[mask] = false;
         return false;
     }
 
 private:
     unordered_map<int,bool> history = unordered_map<int,bool>();
 };
+
+int main()
+{
+    Solution s = Solution();
+    cout << s.canIWin(10,11);
+}
