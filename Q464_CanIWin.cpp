@@ -30,6 +30,10 @@ public:
         for(int i = 0; i < maxChoosableInteger; i++){
             int curr = (1<<i);
             if((curr&mask)==0){
+                /*
+                 * made a stupid mistake here ealier. remain and mask are still used in later loops so that we cannot
+                 * change them.
+                 */
                 if(remain <= (i+1) || !oneStep(remain - (i+1), mask|curr, maxChoosableInteger)){
                     history[mask] = true;
                     return true;
