@@ -6,92 +6,99 @@
 #include<iostream>
 using namespace std;
 
-struct num {
+class NumberIndex {
+public:
     int index;
     int value;
+    NumberIndex(int num, int ind) {
+        value = num;
+        index = ind;
+    }
+
+    NumberIndex() {
+
+    }
 };
 
 class Solution {
 public:
     vector<int> countSmaller(vector<int> &nums) {
-
         //printVector(nums);
         vector<int> smallerResult = vector<int>(nums.size(), 0);
-        vector<num> num_values = vector<num>(nums.size());
-        for (int k = 0; k < nums.size(); k++) {
-            num tmp = {k, nums[k]};
-            num_values.push_back(tmp);
+        if(nums.size() < 2){
+            printVector(smallerResult);
+            return smallerResult;
         }
+        vector<NumberIndex> num_values = vector<NumberIndex>();
+        for (int k = 0; k < nums.size(); k++) {
 
-        mergeFindSmaller(num_values, 0, num_values.size() - 1, smallerResult);
+            //have made a stupid mistake here...if you have already initilize the vector with certain size. pushback will
+            //resize and make it longer than what you think.
+            NumberIndex tmp(nums[k],k);
+            num_values.push_back(tmp);
+
+        }
+        cout<<"1num_values length"<<num_values.size()<<endl;
+
+        mergeFindSmaller(num_values, smallerResult);
         //printVector(nums);
-        //printVector(smallerResult);
-
+        printVector(smallerResult);
         return smallerResult;
     }
 
-    void mergeFindSmaller(vector<num> &nums, int start, int end, vector<int> &smallerResult) {
-        cout << "start:" << start << "num len:" << nums.size() << endl;
+    void mergeFindSmaller(vector<NumberIndex> &nums, vector<int> &smallerResult) {
+        //cout << "start:" << start << "num len:" << nums.size() << endl;
+        cout<<"1nums length"<<nums.size()<<endl;
 
         if (nums.size() < 2)
             return;
-        int mid = (start + end) / 2;
-        vector<num> L = vector<num>();
-        vector<num> R = vector<num>();
-        for (int i = start; i <= mid; i++)
-            L.push_back(nums[i - start]);
-        for (int j = mid + 1; j <= end; j++)
-            R.push_back(nums[j - start]);
+        int mid = (0 + nums.size() - 1)/2;
+        vector<NumberIndex> L = vector<NumberIndex>();
+        vector<NumberIndex> R = vector<NumberIndex>();
+        cout<<"nums length"<<nums.size()<<endl;
+        for (int i = 0; i <= mid; i++)
+            L.push_back(nums[i]);
+        for (int j = mid + 1; j < nums.size(); j++)
+            R.push_back(nums[j]);
 
-        mergeFindSmaller(L, start, mid, smallerResult);
-        mergeFindSmaller(R, mid + 1, end, smallerResult);
-        merge(L, R, nums, start, end, smallerResult);
+        cout<<"L.size"<<L.size()<<"R.size"<<R.size()<<endl;
+
+
+        mergeFindSmaller(L, smallerResult);
+        mergeFindSmaller(R,smallerResult);
+        merge(L, R, nums,  smallerResult);
     }
 
 private:
-    void merge(vector<num> L, vector<num> R, vector<num> &nums, int start, int end, vector<int> &smallerResult) {
-        int mid = (start + end) / 2;
-
-        int i = start, j = mid + 1, index = 0;
-
-
-        //cout << "start " << start << "end " << end << endl;
-        while (i <= mid && j <= end) {
-            if (L[i - start].value < R[j - mid - 1].value) {
-                nums[index++] = L[i - start];
-
-                i++;
-            } else if (R[j - mid - 1].value < L[i - start].value) {
-                nums[index++] = R[j - mid - 1];
-                //cout << "nums[" << j << "]< nums[" << i << "]" << endl;
-                for (int k = i; k <= mid; k++) {
-                    smallerResult[L[i - start].index]++;
-                }
-                j++;
-
-
-            } else {
-                //if the two are equal
-                nums[index++] = L[i - start];
-                nums[index++] = R[j - mid - 1];
-                i++;
-                j++;
+    void merge(const vector<NumberIndex> L, const vector<NumberIndex> R, vector<NumberIndex> &nums,  vector<int> &smallerResult) {
+        int i = 0, j = 0;
+        while (i < L.size() && j < R.size()) {
+            if (L[i].value < R[j].value) {
+                nums[i + j] = L[i];
+                smallerResult[L[i++].index] += j;
+                cout<<L[i].value <<"<"<<R[j].value<<endl;
+            } else if(L[i].value > R[j].value){
+                nums[i + j] = R[j++];
             }
+            else{
+                nums[i+j] = L[i];
+                smallerResult[L[i++].index] += j;
+                nums[i+j] = R[j++];
+            }
+        }
+        if(i < L.size()){
+            nums[i+j] = L[i];
+            smallerResult[L[i++].index] += j;
+            cout<<"i="<<i<<"j="<<j<<endl;
+            cout<<"L.size"<<L.size()<<"R.size"<<R.size()<<endl;
 
         }
-
-        while (i <= mid) {
-            nums[index++] = L[i - start];
-            i++;
-        }
-
-        while (j <= end) {
-            nums[index++] = R[j - mid - 1];
-            j++;
+        if(j < R.size())
+        {
+            nums[i+j] = R[j++];
         }
 
     }
-
     void printVector(vector<int> nums) {
         cout << "the vector is:" << endl;
         for (auto e:nums)
@@ -101,8 +108,8 @@ private:
 };
 
 int main() {
-    int a[] = {5, 2, 6, 1};
-    vector<int> input = vector<int>(a, a + 4);
+    int a[] = {-1, -1};
+    vector<int> input = vector<int>(a, a + 2);
     Solution s = Solution();
     s.countSmaller(input);
 }
