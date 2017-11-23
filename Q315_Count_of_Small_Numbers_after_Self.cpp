@@ -15,7 +15,7 @@ class Solution {
 public:
     vector<int> countSmaller(vector<int> &nums) {
 
-        printVector(nums);
+        //printVector(nums);
         vector<int> smallerResult = vector<int>(nums.size(), 0);
         vector<num> num_values = vector<num>(nums.size());
         for (int k = 0; k < nums.size(); k++) {
@@ -24,8 +24,8 @@ public:
         }
 
         mergeFindSmaller(num_values, 0, num_values.size() - 1, smallerResult);
-        printVector(nums);
-        printVector(smallerResult);
+        //printVector(nums);
+        //printVector(smallerResult);
 
         return smallerResult;
     }
@@ -55,7 +55,7 @@ private:
         int i = start, j = mid + 1, index = 0;
 
 
-        cout << "start " << start << "end " << end << endl;
+        //cout << "start " << start << "end " << end << endl;
         while (i <= mid && j <= end) {
             if (L[i - start].value < R[j - mid - 1].value) {
                 nums[index++] = L[i - start];
@@ -63,7 +63,7 @@ private:
                 i++;
             } else if (R[j - mid - 1].value < L[i - start].value) {
                 nums[index++] = R[j - mid - 1];
-                cout << "nums[" << j << "]< nums[" << i << "]" << endl;
+                //cout << "nums[" << j << "]< nums[" << i << "]" << endl;
                 for (int k = i; k <= mid; k++) {
                     smallerResult[L[i - start].index]++;
                 }
@@ -101,8 +101,8 @@ private:
 };
 
 int main() {
-    int a[] = {2, 0, 1};
-    vector<int> input = vector<int>(a, a + 3);
+    int a[] = {5, 2, 6, 1};
+    vector<int> input = vector<int>(a, a + 4);
     Solution s = Solution();
     s.countSmaller(input);
 }
