@@ -1,3 +1,3 @@
-# leetcode
-My repository for leetcode problems.
-Try to practice some algorithms everyday to avoid making stupid troubles in my code...
+#LeetCode Practice
+
+My repo for LeetCode. Practice some algorithms to avoid stupid mistakes in my work.
