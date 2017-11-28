@@ -11,50 +11,36 @@ class Solution {
 public:
     vector<vector<int>> combinationSum(vector<int>& candidates, int target) {
         vector<vector<int>> res = vector<vector<int>>();
-        for(int i = 0; i < candidates.size(); i++){
-            //cout<<candidates[i]<<endl;
-            vector<int> tmp = vector<int>();
-            tmp.push_back(candidates[i]);
-            target -= candidates[i];
-            if(target == 0)
-            {
-                sort(tmp.begin(),tmp.end());
-                if(existSol.find(tmp)==existSol.end())
-                    res.push_back(tmp);
-                continue;
-            }
-            else if(target < 0)
-                continue;
-            else
-                helper(candidates,target,res,tmp);
-        }
+        vector<int> tmp = vector<int>();
+        //we sort the candidates first so that we do not consider the smaller numbers after big ones. This can
+        //avoid the duplicates.
+        sort(candidates.begin(),candidates.end());
+        helper(candidates,0,target,res,tmp);
         return res;
     }
 
 private:
-    void helper(vector<int> candidates, int target, vector<vector<int>>& res, vector<int> tmp_sol){
-        for(int i = 0; i < candidates.size(); i++){
-            //vector<int> tmp_sol(sol);
+    void helper(vector<int> candidates, int start, int target, vector<vector<int>>& res, vector<int> sol){
+        vector<int> tmp_sol = vector<int>();
+        int tmp_target;
+        for(int i = start; i < candidates.size(); i++){
+            tmp_sol = sol;
+            tmp_target = target;
             tmp_sol.push_back(candidates[i]);
-            target -= candidates[i];
-            if(target == 0){
+            tmp_target -= candidates[i];
+            if(tmp_target == 0){
                 sort(tmp_sol.begin(),tmp_sol.end());
-                if(existSol.find(tmp_sol)==existSol.end()){
-                    res.push_back(tmp_sol);
-                    continue;
-                }
-
+                res.push_back(tmp_sol);
+                continue;
             }
-            else if(target < 0)
+            else if(tmp_target < 0)
                 continue;
             else
-                helper(candidates, target, res, tmp_sol);
-
-
+                helper(candidates, i, tmp_target, res, tmp_sol);
+            tmp_sol.pop_back();
         }
     }
 
-    set<vector<int>> existSol = set<vector<int>>();
 };
 
 int main()
@@ -63,14 +49,13 @@ int main()
     vector<int> input = vector<int>(a,a+4);
     Solution s = Solution();
     vector<vector<int>> res = s.combinationSum(input,7);
+    cout<<"the length of res is "<<res.size()<<endl;
     for(auto vec:res){
         for(auto e:vec){
             cout<<e;
         }
         cout<<endl;
     }
-
-
 
 }
 
