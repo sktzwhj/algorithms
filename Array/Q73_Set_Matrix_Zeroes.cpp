@@ -46,7 +46,7 @@ public:
                     }
                 }
             }
-            
+
             if (clear_1st_row) {
                 for (int i = 0; i < numCol; i++)
                     matrix[0][i] = 0;
