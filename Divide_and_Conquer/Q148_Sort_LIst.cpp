@@ -9,7 +9,7 @@ public:
         ListNode *slow = head;
         ListNode *fast = head;
         //use two pointers to find the mid of the linkedlist.
-        //NULL not allowed 
+        //NULL not allowed
         while (fast->next && fast->next->next) {
             slow = slow->next;
             fast = fast->next->next;
