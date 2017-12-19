@@ -51,14 +51,14 @@ public:
 
     /** Returns if the word is in the trie. */
     bool search(const string word) {
-        cout << "word" << word << endl;
+        //cout<<"word"<<word<<endl;
         TrieNode *curr = root;
         for (int i = 0; i < word.size(); i++) {
-            cout << i << endl;
+            //cout<<i<<endl;
             for (int j = 0; j < 26; j++) {
-                if (!curr)
+                if(!curr)
                     return false;
-                if ((curr->next[j]) && (j != word[i] - 'a')) {
+                if ((curr->next[j])&&(j != word[i] - 'a')) {
                     string tmp_word(word);
                     tmp_word[i] = 'a' + j;
                     //cout << word << endl;
@@ -86,7 +86,7 @@ public:
 
 private:
     TrieNode *root = new TrieNode();
-    set <string> existWord;
+    set<string> existWord;
 };
 
 class MagicDictionary {
@@ -96,11 +96,11 @@ public:
     }
 
     /** Build a dictionary through a list of words */
-    void buildDict(vector <string> dict) {
+    void buildDict(vector<string> dict) {
         wordTrie = Trie();
         for (string word:dict) {
             wordTrie.insert(word);
-            cout << "insert" << word << endl;
+            //cout << "insert" << word << endl;
         }
     }
 
