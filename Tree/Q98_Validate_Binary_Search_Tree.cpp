@@ -20,6 +20,9 @@ struct retType {
     bool Valid;
 };
 
+//my solution introduces a bit redundant computation, a simple way is to do in-order traversal and see if we get an
+//ascending order of numbers.
+
 class Solution {
 public:
     bool isValidBST(TreeNode *root) {
