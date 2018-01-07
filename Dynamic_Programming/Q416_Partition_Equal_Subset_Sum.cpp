@@ -1,4 +1,4 @@
-''//
+//
 // Created by wu061 on 20/12/17.
 //
 #include<vector>
@@ -13,6 +13,7 @@ using namespace std;
  */
 class Solution {
 public:
+    //dp[i][j] - whether sum j can be achieved by selecting in the first i elements
     bool canPartition(vector<int>& nums) {
         int sum = 0;
         for(int i:nums) sum += i;
