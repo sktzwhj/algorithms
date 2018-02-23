@@ -9,7 +9,7 @@
 using namespace std;
 
 /*
- * we can organize two max heaps, for profits we make a max heap since we want to get the max profits while for capitals
+ * we can organize two heaps, for profits we make a max heap since we want to get the max profits while for capitals
  * we maintain a min heap since we cannot start a project which requires more capital.
  */
 
