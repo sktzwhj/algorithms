@@ -23,6 +23,10 @@ public:
         for(auto num:nums){
             //num already be used up
             if(freq[num] == 0) continue;
+            /*
+             * why we do not bother to consider start a new seq by this num?
+             * even if you can get a solution, you can still append that solution to the current one
+             */
             if(exist_seq[num - 1]){
                 //exist a seq to append
                 exist_seq[num - 1]--;
