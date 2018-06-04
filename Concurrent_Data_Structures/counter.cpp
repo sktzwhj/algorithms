@@ -71,6 +71,49 @@ private:
     int count;
 };
 
+enum node_status {
+    IDLE, FIRST, SECOND, RESULT, ROOT
+};
+
+class combining_tree {
+    class node {
+    public:
+        node() {
+            node_count = 0;
+            locked = false;
+        }
+
+        int pre_combining() {
+            __sync_bool_compare_and_swap(&this->locked, false, true);
+        }
+
+    private:
+        int node_count;
+        bool locked;
+        std::mutex node_lock;
+        node_status status;
+        //active thread: first value, passive thread: second value
+        int first_value, second_value;
+        //result fetched by the active thread.
+        int result;
+    };
+
+public:
+    combining_tree(int n_thread) {
+        /*
+         * n_thread is the max number of threads which are supported by the combining tree. we assume n_thread must be
+         * power of 2 here. we can use an array to store the complete binary tree.
+         */
+        tree = new node[2 * n_thread];
+    }
+
+
+
+private:
+    node *tree;
+
+};
+
 int main()
 {
     counter_lock c;
