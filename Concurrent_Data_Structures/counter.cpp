@@ -57,9 +57,14 @@ private:
 
  */
 
+
+//a shared counter implemented by combining tree.
+
 enum node_status {
     IDLE, FIRST, SECOND, RESULT, ROOT
 };
+
+std::mutex output_lock;
 
 class node {
 public:
@@ -77,20 +82,28 @@ public:
         return node_id / 2;
     }
 
+    void set_status(node_status st) {
+        status = st;
+    }
+
     bool pre_combine() {
         /*
          * if a node is available, the active thread can continously climb towards the root.
          * first lock, at the same time, only one thread can change the status of the node.
          * return: bool whether the current node can be combined.
          */
-
         std::unique_lock<std::mutex> l(this->node_lock);
         //another lock, if the passive thread is waiting for results, we cannot climb
         //even though no other thread is trying to modify the status of the node, it might be waiting the results
         while (this->locked) {
-            cv.wait(l);
+            //wait unlocks node_lock and wait here.
+            this->cv.wait(l);
         }
-        std::cout<<"pre_combine"<<std::endl;
+        {
+            std::unique_lock<std::mutex> ol(output_lock);
+            std::cout << "pre_combine" << std::endl;
+        }
+        assert(this->status != SECOND);
         switch (this->status) {
             case IDLE:
                 status = FIRST;
@@ -102,11 +115,16 @@ public:
                  */
                 status = SECOND;
                 locked = true;
+                {
+                    std::unique_lock<std::mutex> ol(output_lock);
+                    std::cout << "lock node"<<this->node_id<<std::endl;
+                }
                 return false;
             case ROOT:
                 return false;
             default:
-                std::cerr << "unexpected node status" << std::endl;
+                std::unique_lock<std::mutex> ol(output_lock);
+                std::cerr << "[in pre_combine]unexpected node status" << this->status << std::endl;
                 exit(1);
         }
     }
@@ -114,12 +132,11 @@ public:
     //if a node is combinable, we do the combine.
     int combine(int combined) {
         //parameters: combined [int] is the combined values from all the nodes rooted on the current one
-        //?necessity of the following locks?
         std::unique_lock<std::mutex> l(this->node_lock);
         while (this->locked) {
-            cv.wait(l);
+            this->cv.wait(l);
         }
-        std::cout<<"combine"<<std::endl;
+        std::cout << "combine" << std::endl;
 
         //as long as combinable, the current thread is the winner, put the values it combined from the children to first value.
         this->first_value = combined;
@@ -128,9 +145,12 @@ public:
             case FIRST:
                 return this->first_value; //itself has no value yet, accumulate directly.
             case SECOND:
+                //when does the second_value get set?????? those combines which got stuck here.
                 return this->first_value + this->second_value; //there were already some value ??????
             default:
-                std::cerr << "unexpected node status" << std::endl;
+                std::unique_lock<std::mutex> ol(output_lock);
+
+                std::cerr << "[in combine]unexpected node status" << this->status << std::endl;
                 exit(1);
         }
     }
@@ -138,51 +158,76 @@ public:
     int op(int combined) {
         std::unique_lock<std::mutex> l(this->node_lock);
         int old_value;
-        std::cout<<"op"<<std::endl;
+        {
+            std::unique_lock<std::mutex> ol(output_lock);
+            std::cout << "op" << std::endl;
+        }
 
         switch (this->status) {
             case ROOT:
+                //active thread
                 old_value = this->result;
                 this->result += combined;
                 return old_value;
+
             case SECOND:
-                //the current thread becomes a loser, just put its value to the second value of the current node and wait
+                //passive thread
                 this->second_value = combined;
                 //??????why do locked = false and notify_all()??????
                 this->locked = false;
-                cv.notify_all();
+                this->cv.notify_all();
                 while (this->status != RESULT) {
+                    {
+                        std::unique_lock<std::mutex> ol(output_lock);
+                        std::cout << "get stuck for waiting result" << std::endl;
+                    }
+
                     cv.wait(l);
+                    {
+                        std::unique_lock<std::mutex> ol(output_lock);
+                        std::cout << "end stuck" << std::endl;
+                    }
                 }
+
                 //??????why do locked = false and notify_all()??????
-                locked = false;
-                cv.notify_all();
+                old_value = this->result;
+                this->locked = false;
+                this->cv.notify_all();
                 this->status = IDLE;
-                return this->result;
+
+                return old_value;
             default:
-                std::cerr << "error happens in op func" << std::endl;
+                std::unique_lock<std::mutex> ol(output_lock);
+
+                std::cerr << "[in op]unexpected node status" << this->status << std::endl;
                 exit(1);
         }
     }
 
     void distribute(int prior) {
         std::unique_lock<std::mutex> l(this->node_lock);
-        std::cout<<"distribute"<<std::endl;
+        {
+            std::unique_lock<std::mutex> ol(output_lock);
+            std::cout << "distribute" << std::endl;
+        }
 
         switch (this->status) {
             case FIRST:
                 this->status = IDLE;
                 this->locked = false;
+                this->cv.notify_all();
                 break;
             case SECOND:
                 this->result = prior + this->second_value;
                 this->status = RESULT;
+                this->cv.notify_all();
                 break;
             default:
-                std::cerr << "error happens in distribute func" << std::endl;
+                std::unique_lock<std::mutex> ol(output_lock);
+                std::cerr << "[in distribute]unexpected node status" << this->status << std::endl;
                 exit(1);
         }
-        cv.notify_all();
+        this->cv.notify_all();
     }
 
     int get_result() {
@@ -201,7 +246,6 @@ private:
     int result;
 };
 
-
 class combining_tree {
 
 public:
@@ -210,41 +254,45 @@ public:
          * n_thread is the max number of threads which are supported by the combining tree. we assume n_thread must be
          * power of 2 here. we can use an array to store the complete binary tree.
          */
-        tree = std::vector<node*>(2*n_thread + 1);
+        tree = std::vector<node *>(2 * n_thread + 1);
         for (int i = 1; i < 2 * n_thread + 1; i++) {
             tree[i] = new node(i);
         }
+        tree[1]->set_status(ROOT);
         leaf_num = n_thread;
     }
-
 
     ~combining_tree() {
     }
 
     int get_and_increment(int thread_id) {
+        {
+            std::unique_lock<std::mutex> ol(output_lock);
+            std::cout << "total count = " << get_count() << std::endl;
+        }
+
+
         std::list<int> nodes_stack;
         int original_leaf_id = leaf_num + thread_id;
         int leaf_id = original_leaf_id;
 
         while (tree[leaf_id]->pre_combine()) {
-            std::cout<<leaf_id<<std::endl;
-            if(leaf_id != tree[leaf_id]->get_parent_id())
+            //std::cout << leaf_id << std::endl;
+            if (leaf_id != tree[leaf_id]->get_parent_id())
                 leaf_id = tree[leaf_id]->get_parent_id();
             else
                 break;
         }
 
-
         int stop_node_id = leaf_id;
         int tmp_id = original_leaf_id;
 
-
-        std::cout<<"stop_node_id = "<<stop_node_id<<std::endl;
+        //std::cout << "stop_node_id = " << stop_node_id << std::endl;
         int combined = 1;
         while (tmp_id != stop_node_id) {
             combined = tree[tmp_id]->combine(combined);
             nodes_stack.push_back(tmp_id);
-            if(tmp_id != tree[tmp_id]->get_parent_id())
+            if (tmp_id != tree[tmp_id]->get_parent_id())
                 tmp_id = tree[tmp_id]->get_parent_id();
             else
                 break;
@@ -257,6 +305,7 @@ public:
             nodes_stack.pop_back();
             tree[tmp_id]->distribute(prior);
         }
+
         return prior;
     }
 
@@ -265,23 +314,23 @@ public:
     }
 
 private:
-    std::vector<node*> tree;
+    std::vector<node *> tree;
     int leaf_num;
 
 };
 
-#define THREAD_NUM 2
+#define THREAD_NUM 8
 
 int main() {
-    combining_tree counter = combining_tree(THREAD_NUM);
+    combining_tree counter = combining_tree(THREAD_NUM / 2);
     std::thread t[THREAD_NUM];
     for (int i = 0; i < THREAD_NUM; i++) {
-        t[i] = std::thread(std::bind(&combining_tree::get_and_increment, &counter, i + 1));
+        t[i] = std::thread(std::bind(&combining_tree::get_and_increment, &counter, (i + 1) % 2));
     }
-    //std::thread t2(std::bind(&counter_lock::increase, &c));
-    //std::thread t3(std::bind(&counter_lock::increase, &c));
     for (int i = 0; i < THREAD_NUM; i++) {
         t[i].join();
     }
-    std::cout << counter.get_count() << std::endl;
 
+    std::cout << "final count = " << counter.get_count() << std::endl;
+
+}
