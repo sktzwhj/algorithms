@@ -2,6 +2,8 @@
 // Created by wu061 on 4/06/18.
 //
 
+
+//a shared counter implemented by combining tree.
 //a shared counter implemented by combining tree.
 
 //the simplest counter, sequential
@@ -9,6 +11,11 @@
 #include <mutex>
 #include <thread>
 #include <iostream>
+#include <condition_variable>
+#include <list>
+#include <vector>
+#include <assert.h>
+
 
 class counter {
 public:
@@ -58,8 +65,6 @@ private:
  */
 
 
-//a shared counter implemented by combining tree.
-
 enum node_status {
     IDLE, FIRST, SECOND, RESULT, ROOT
 };
@@ -95,7 +100,7 @@ public:
         std::unique_lock<std::mutex> l(this->node_lock);
         //another lock, if the passive thread is waiting for results, we cannot climb
         //even though no other thread is trying to modify the status of the node, it might be waiting the results
-        while (this->locked) {
+        while (this->locked || this->status == SECOND) {
             //wait unlocks node_lock and wait here.
             this->cv.wait(l);
         }
@@ -136,7 +141,10 @@ public:
         while (this->locked) {
             this->cv.wait(l);
         }
-        std::cout << "combine" << std::endl;
+        {
+            std::unique_lock<std::mutex> ol(output_lock);
+            std::cout << "combine" << std::endl;
+        }
 
         //as long as combinable, the current thread is the winner, put the values it combined from the children to first value.
         this->first_value = combined;
@@ -157,6 +165,7 @@ public:
 
     int op(int combined) {
         std::unique_lock<std::mutex> l(this->node_lock);
+
         int old_value;
         {
             std::unique_lock<std::mutex> ol(output_lock);
@@ -198,7 +207,6 @@ public:
                 return old_value;
             default:
                 std::unique_lock<std::mutex> ol(output_lock);
-
                 std::cerr << "[in op]unexpected node status" << this->status << std::endl;
                 exit(1);
         }
@@ -215,12 +223,12 @@ public:
             case FIRST:
                 this->status = IDLE;
                 this->locked = false;
-                this->cv.notify_all();
+                //this->cv.notify_all();
                 break;
             case SECOND:
                 this->result = prior + this->second_value;
                 this->status = RESULT;
-                this->cv.notify_all();
+                //this->cv.notify_all();
                 break;
             default:
                 std::unique_lock<std::mutex> ol(output_lock);
@@ -278,6 +286,7 @@ public:
 
         while (tree[leaf_id]->pre_combine()) {
             //std::cout << leaf_id << std::endl;
+            //if the leaf is not the root, we find its parent. otherwise stop
             if (leaf_id != tree[leaf_id]->get_parent_id())
                 leaf_id = tree[leaf_id]->get_parent_id();
             else
@@ -333,4 +342,4 @@ int main() {
 
     std::cout << "final count = " << counter.get_count() << std::endl;
 
-}
+}}
