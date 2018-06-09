@@ -8,13 +8,17 @@
 
 //the simplest counter, sequential
 
+
 #include <mutex>
+#include <shared_mutex>
 #include <thread>
 #include <iostream>
 #include <condition_variable>
+#include <functional>
 #include <list>
 #include <vector>
 #include <assert.h>
+
 
 
 class counter {
@@ -69,6 +73,7 @@ enum node_status {
     IDLE, FIRST, SECOND, RESULT, ROOT
 };
 
+bool DEBUG = false;
 std::mutex output_lock;
 
 class node {
@@ -97,14 +102,16 @@ public:
          * first lock, at the same time, only one thread can change the status of the node.
          * return: bool whether the current node can be combined.
          */
-        std::unique_lock<std::mutex> l(this->node_lock);
+
+
+        std::unique_lock<std::shared_mutex> l(this->node_lock);
         //another lock, if the passive thread is waiting for results, we cannot climb
         //even though no other thread is trying to modify the status of the node, it might be waiting the results
         while (this->locked || this->status == SECOND) {
             //wait unlocks node_lock and wait here.
-            this->cv.wait(l);
+            this->cv.wait(l, [&] { return (!this->locked) && (this->status != SECOND); });
         }
-        {
+        if (DEBUG) {
             std::unique_lock<std::mutex> ol(output_lock);
             std::cout << "pre_combine" << std::endl;
         }
@@ -120,28 +127,31 @@ public:
                  */
                 status = SECOND;
                 locked = true;
-                {
+                if (DEBUG) {
                     std::unique_lock<std::mutex> ol(output_lock);
-                    std::cout << "lock node"<<this->node_id<<std::endl;
+                    std::cout << "lock node" << this->node_id << std::endl;
                 }
                 return false;
             case ROOT:
                 return false;
             default:
-                std::unique_lock<std::mutex> ol(output_lock);
-                std::cerr << "[in pre_combine]unexpected node status" << this->status << std::endl;
-                exit(1);
+                if (DEBUG) {
+                    std::unique_lock<std::mutex> ol(output_lock);
+                    std::cerr << "[in pre_combine]unexpected node status" << this->status << std::endl;
+                    exit(1);
+                }
+
         }
     }
 
     //if a node is combinable, we do the combine.
     int combine(int combined) {
         //parameters: combined [int] is the combined values from all the nodes rooted on the current one
-        std::unique_lock<std::mutex> l(this->node_lock);
+        std::unique_lock<std::shared_mutex> l(this->node_lock);
         while (this->locked) {
-            this->cv.wait(l);
+            this->cv.wait(l, [&] { return (!this->locked); });
         }
-        {
+        if (DEBUG) {
             std::unique_lock<std::mutex> ol(output_lock);
             std::cout << "combine" << std::endl;
         }
@@ -156,18 +166,20 @@ public:
                 //when does the second_value get set?????? those combines which got stuck here.
                 return this->first_value + this->second_value; //there were already some value ??????
             default:
-                std::unique_lock<std::mutex> ol(output_lock);
+                if (DEBUG) {
+                    std::unique_lock<std::mutex> ol(output_lock);
+                    std::cerr << "[in combine]unexpected node status" << this->status << std::endl;
+                    exit(1);
+                }
 
-                std::cerr << "[in combine]unexpected node status" << this->status << std::endl;
-                exit(1);
         }
     }
 
     int op(int combined) {
-        std::unique_lock<std::mutex> l(this->node_lock);
+        std::unique_lock<std::shared_mutex> l(this->node_lock);
 
         int old_value;
-        {
+        if (DEBUG) {
             std::unique_lock<std::mutex> ol(output_lock);
             std::cout << "op" << std::endl;
         }
@@ -186,13 +198,13 @@ public:
                 this->locked = false;
                 this->cv.notify_all();
                 while (this->status != RESULT) {
-                    {
+                    if (DEBUG) {
                         std::unique_lock<std::mutex> ol(output_lock);
                         std::cout << "get stuck for waiting result" << std::endl;
                     }
 
-                    cv.wait(l);
-                    {
+                    cv.wait(l, [&] { return this->status == RESULT; });
+                    if (DEBUG) {
                         std::unique_lock<std::mutex> ol(output_lock);
                         std::cout << "end stuck" << std::endl;
                     }
@@ -206,15 +218,18 @@ public:
 
                 return old_value;
             default:
-                std::unique_lock<std::mutex> ol(output_lock);
-                std::cerr << "[in op]unexpected node status" << this->status << std::endl;
-                exit(1);
+                if (DEBUG) {
+                    std::unique_lock<std::mutex> ol(output_lock);
+                    std::cerr << "[in op]unexpected node status" << this->status << std::endl;
+                    exit(1);
+                }
+
         }
     }
 
     void distribute(int prior) {
-        std::unique_lock<std::mutex> l(this->node_lock);
-        {
+        std::unique_lock<std::shared_mutex> l(this->node_lock);
+        if (DEBUG) {
             std::unique_lock<std::mutex> ol(output_lock);
             std::cout << "distribute" << std::endl;
         }
@@ -228,26 +243,30 @@ public:
             case SECOND:
                 this->result = prior + this->second_value;
                 this->status = RESULT;
-                //this->cv.notify_all();
+                this->cv.notify_all();
                 break;
             default:
-                std::unique_lock<std::mutex> ol(output_lock);
-                std::cerr << "[in distribute]unexpected node status" << this->status << std::endl;
-                exit(1);
+                if (DEBUG) {
+                    std::unique_lock<std::mutex> ol(output_lock);
+                    std::cerr << "[in distribute]unexpected node status" << this->status << std::endl;
+                    exit(1);
+                }
+
         }
         this->cv.notify_all();
     }
 
     int get_result() {
+        std::shared_lock<std::shared_mutex> l(node_lock);
         return result;
     }
 
 private:
     int node_id;
     bool locked;
-    std::mutex node_lock;
+    std::shared_mutex node_lock;
     node_status status;
-    std::condition_variable cv;
+    std::condition_variable_any cv;
     //active thread: first value, passive thread: second value
     int first_value, second_value;
     //result fetched by the active thread.
@@ -319,6 +338,7 @@ public:
     }
 
     int get_count() {
+        std::cout << "current count = " << tree[1]->get_result() << std::endl;
         return tree[1]->get_result();
     }
 
@@ -333,13 +353,23 @@ private:
 int main() {
     combining_tree counter = combining_tree(THREAD_NUM / 2);
     std::thread t[THREAD_NUM];
+    std::thread tr[THREAD_NUM];
+
     for (int i = 0; i < THREAD_NUM; i++) {
         t[i] = std::thread(std::bind(&combining_tree::get_and_increment, &counter, (i + 1) % 2));
+    }
+    for (int j = 0; j < THREAD_NUM; j++) {
+        tr[j] = std::thread(std::bind(&combining_tree::get_count, &counter));
+
     }
     for (int i = 0; i < THREAD_NUM; i++) {
         t[i].join();
     }
 
+    for (int i = 0; i < THREAD_NUM; i++) {
+        tr[i].join();
+    }
+
     std::cout << "final count = " << counter.get_count() << std::endl;
 
-}}
+}
