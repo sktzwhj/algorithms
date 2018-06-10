@@ -15,8 +15,17 @@
 
 #include <iostream>
 #include <atomic>
+#include <thread>
+#include <functional>
+#include <mutex>
 
-template <typename T> class stack_node {
+
+bool DEBUG = true;
+std::mutex output_lock;
+
+
+template<typename T>
+class stack_node {
 public:
     stack_node(T val) {
         value_ = val;
@@ -28,32 +37,77 @@ public:
     }
 
     T value_;
-    stack_node* next_;
+    stack_node<T> *next_;
 };
 
-template <typename T> class concurrent_stack {
+template<typename T>
+class concurrent_stack {
 public:
     concurrent_stack() {
-        head_ = NULL;
+        head_.store(NULL);
+        size_.store(0);
     }
 
     bool push(T val) {
-        stack_node* curr;
+        stack_node<T> *curr;
         do {
             curr = new stack_node(val);
             curr->next_ = head_;
             //curr->next = head; head = curr;
 
-        } while(!std::atomic_compare_exchange_strong(&head_, &curr->next_, curr));
-        ++size_;
+        } while (!std::atomic_compare_exchange_strong(&head_, &curr->next_, curr));
+        size_++;
+        if (DEBUG) {
+            std::unique_lock<std::mutex> ol(output_lock);
+            std::cout << "push " << val << std::endl;
+            std::cout << "stack size = "<< size_.load() <<std::endl;
+
+        }
         //need to consider the lock for size as well.
     }
 
     void pop() {
-        __sync_val_compare_and_swap(&head_, head_, head_->next_);
+        //head_ = head_ -> next
+        stack_node<T> *top;
+        do {
+            top = head_.load();
+            //curr->next = head; head = curr;
+            if(top == NULL) return;
+
+        } while (!std::atomic_compare_exchange_strong(&head_, &top, top->next_));
+        size_--;
+        if (DEBUG) {
+            std::unique_lock<std::mutex> ol(output_lock);
+            std::cout << "pop " << std::endl;
+            std::cout << "stack size = "<< size_.load() <<std::endl;
+        }
+        //delete top;
+
     }
 
 private:
-    std::atomic<stack_node*> head_;
-    int size_;
+    std::atomic<stack_node<T> *> head_;
+    std::atomic<int> size_;
 };
+
+#define THREAD_NUM 8
+
+int main() {
+    concurrent_stack s = concurrent_stack<int>();
+    std::thread t_push[THREAD_NUM];
+    std::thread t_pop[THREAD_NUM];
+    for (int i = 0; i < THREAD_NUM; i++) {
+        t_push[i] = std::thread(std::bind(&concurrent_stack<int>::push, &s, i));
+    }
+
+    for (int i = 0; i < THREAD_NUM; i++) {
+        t_pop[i] = std::thread(std::bind(&concurrent_stack<int>::pop, &s));
+    }
+    for (int i = 0; i < THREAD_NUM; i++) {
+        t_push[i].join();
+    }
+
+    for (int i = 0; i < THREAD_NUM; i++) {
+        t_pop[i].join();
+    }
+}
