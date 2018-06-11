@@ -22,6 +22,7 @@
 
 bool DEBUG = true;
 std::mutex output_lock;
+std::mutex cnt_lock;
 
 
 template<typename T>
@@ -53,18 +54,39 @@ public:
         do {
             curr = new stack_node(val);
             curr->next_ = head_;
-            //curr->next = head; head = curr;
-
+            //curr->next = head; head = curr
         } while (!std::atomic_compare_exchange_strong(&head_, &curr->next_, curr));
-        size_++;
+        //need to consider the lock for size as well.
+        int size;
+        int size_inc;
+        do {
+            size = size_;
+            size_inc = size + 1;
+            //curr->next = head; head = curr
+        } while (!std::atomic_compare_exchange_strong(&size_, &size, size_inc));
         if (DEBUG) {
             std::unique_lock<std::mutex> ol(output_lock);
             std::cout << "push " << val << std::endl;
-            std::cout << "stack size = "<< size_.load() <<std::endl;
-
+            std::cout << "stack size = " << size_inc << std::endl;
         }
-        //need to consider the lock for size as well.
     }
+
+    T top() {
+        stack_node<T> *top;
+        T top_val;
+        do {
+            top = head_;
+            if (top == NULL) exit(1);
+            else top_val = top->value_;
+            //curr->next = head; head = curr;
+        } while (!std::atomic_compare_exchange_strong(&head_, &top, top));
+        if (DEBUG) {
+            std::unique_lock<std::mutex> ol(output_lock);
+            std::cout << "top value = " << top_val << std::endl;
+        }
+        return top_val;
+    }
+
 
     void pop() {
         //head_ = head_ -> next
@@ -72,14 +94,20 @@ public:
         do {
             top = head_.load();
             //curr->next = head; head = curr;
-            if(top == NULL) return;
+            if (top == NULL) return;
 
         } while (!std::atomic_compare_exchange_strong(&head_, &top, top->next_));
-        size_--;
+        int size;
+        int size_dec;
+        do {
+            size = size_;
+            size_dec = size - 1;
+            //curr->next = head; head = curr
+        } while (!std::atomic_compare_exchange_strong(&size_, &size, size_dec));
         if (DEBUG) {
             std::unique_lock<std::mutex> ol(output_lock);
             std::cout << "pop " << std::endl;
-            std::cout << "stack size = "<< size_.load() <<std::endl;
+            std::cout << "stack size = " << size_dec << std::endl;
         }
         //delete top;
 
@@ -96,18 +124,23 @@ int main() {
     concurrent_stack s = concurrent_stack<int>();
     std::thread t_push[THREAD_NUM];
     std::thread t_pop[THREAD_NUM];
+    std::thread t_top[THREAD_NUM];
     for (int i = 0; i < THREAD_NUM; i++) {
         t_push[i] = std::thread(std::bind(&concurrent_stack<int>::push, &s, i));
     }
-
     for (int i = 0; i < THREAD_NUM; i++) {
         t_pop[i] = std::thread(std::bind(&concurrent_stack<int>::pop, &s));
     }
     for (int i = 0; i < THREAD_NUM; i++) {
+        t_top[i] = std::thread(std::bind(&concurrent_stack<int>::top, &s));
+    }
+    for (int i = 0; i < THREAD_NUM; i++) {
         t_push[i].join();
     }
-
     for (int i = 0; i < THREAD_NUM; i++) {
         t_pop[i].join();
+    }
+    for (int i = 0; i < THREAD_NUM; i++) {
+        t_top[i].join();
     }
 }
