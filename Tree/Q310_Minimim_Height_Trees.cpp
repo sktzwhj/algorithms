@@ -14,7 +14,7 @@ using namespace std;
 
 class Solution {
 public:
-    vector<int> findMinHeightTrees(int n, vector<pair<int, int>> &edges) {
+    vector<int> findMinHeightTrees(int n, vector <pair<int, int>> &edges) {
         vector<int> roots;
         unordered_map<int, vector<int>> neighbors;
         for (int i = 0; i < edges.size(); i++) {
@@ -56,6 +56,7 @@ private:
 #include <vector>
 #include <unordered_map>
 #include <set>
+
 using namespace std;
 //an interesting idea is that the root must be the medium node of the longest path in the graph
 /*
@@ -65,7 +66,7 @@ using namespace std;
 
 class Solution {
 public:
-    vector<int> findMinHeightTrees(int n, vector<pair<int, int>> &edges) {
+    vector<int> findMinHeightTrees(int n, vector <pair<int, int>> &edges) {
         set<int> roots;
 
         unordered_map<int, vector<int>> graph;
@@ -97,9 +98,10 @@ public:
 
 private:
     vector<int> longest_path;
+
     //first time forgot to add & for graph, got TLE... need to be careful...
-    void dfs(unordered_map<int, vector<int>>& graph, int root, int parent, int &cur_longest_path_len,
-             vector<int>& path) {
+    void dfs(unordered_map<int, vector<int>> &graph, int root, int parent, int &cur_longest_path_len,
+             vector<int> &path) {
         //find the longest path in the graph
         bool neighbor_exist = false;
         for (auto neighbor: graph[root]) {
@@ -122,8 +124,8 @@ private:
 };
 
 int main() {
-    vector<pair<int, int>> edges = {make_pair(0, 1), make_pair(0, 2), make_pair(0, 3), make_pair(3, 4),
-                                    make_pair(4, 5)};
+    vector <pair<int, int>> edges = {make_pair(0, 1), make_pair(0, 2), make_pair(0, 3), make_pair(3, 4),
+                                     make_pair(4, 5)};
     int n = 6;
     Solution s = Solution();
     vector<int> roots = s.findMinHeightTrees(n, edges);
