@@ -10,7 +10,7 @@
 
 using namespace std;
 
-//first it can be quite intuitive to think about BFS. Unfortunately, got TLE.  
+//first it can be quite intuitive to think about BFS. Unfortunately, got TLE.
 
 class Solution {
 public:
