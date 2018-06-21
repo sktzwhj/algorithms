@@ -33,7 +33,7 @@ public:
             unvisited.pop();
         }
         for (int i = visited.size() - 1; i >= 0; i--) {
-            if (visited[i].second > visited[i - 1].second || i == 0) {
+            if (i == 0 || visited[i].second > visited[i - 1].second ) {
                 return visited[i].first;
             }
         }
