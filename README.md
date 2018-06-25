@@ -1,3 +1,3 @@
-#LeetCode Practice
+#Algorithms
 
-My repo for LeetCode. Practice some algorithms to avoid stupid mistakes in my work.
+I collected my algorithm practices here. I may also put concept learning codes here. 
