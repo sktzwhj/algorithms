@@ -17,6 +17,7 @@ class Solution {
 public:
     ListNode *insertionSortList(ListNode *head) {
         ListNode *curr = NULL, *prev = head;
+        if (prev == NULL) return head;
         curr = prev->next;
         while (curr != NULL) {
             if (curr->val > prev->val) {
