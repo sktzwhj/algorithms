@@ -10,59 +10,83 @@ using namespace std;
 struct ListNode {
     int val;
     ListNode *next;
+
     ListNode(int x) : val(x), next(NULL) {}
 };
+
+//to debug, the idea is simple. every time when you got even number of lists, just add one NULL.
+//good to see this method beats more than 99%.
 
 class Solution {
 public:
     ListNode *mergeKLists(vector<ListNode *> &lists) {
         int num_of_lists = lists.size();
-        ListNode* extra_list = NULL;
-        if (num_of_lists %2 == 1) {
-            extra_list = lists[lists.size() - 1];
-            lists.pop_back();
+        if (num_of_lists == 0) return NULL;
+        ListNode *extra_list = NULL;
+        if (num_of_lists % 2 == 1) {
+            extra_list = lists[num_of_lists - 1];
+            lists[num_of_lists - 1] = NULL;
             num_of_lists -= 1;
         }
         while (num_of_lists > 1) {
-            for(int i = 0; i < num_of_lists / 2; i++) {
-                lists[i] = mergeTwoLists(lists[2*i], lists[2*i + 1]);
+            for (int i = 0; i < num_of_lists / 2; i++) {
+                lists[i] = mergeTwoLists(lists[2 * i], lists[2 * i + 1]);
             }
             num_of_lists /= 2;
+            if (num_of_lists % 2 == 1 && num_of_lists != 1) {
+                lists[num_of_lists] = NULL;
+                num_of_lists++;
+            }
+            lists.erase(lists.begin() + num_of_lists, lists.end());
         }
-        if(extra_list != NULL) return mergeTwoLists(lists[0], extra_list);
+        if (extra_list != NULL) return mergeTwoLists(lists[0], extra_list);
         return lists[0];
     }
 
-private:
-    ListNode *mergeTwoLists(ListNode* a, ListNode* b) {
-        ListNode *head, *curr, *a_idx = a, *b_idx = b;
-        if (a_idx->val < b->val) {
-            head = a_idx;
-            if (a_idx->next!=NULL) a_idx = a_idx->next;
+    ListNode *getListFromVec(vector<int> vec) {
+        if (vec.size() == 0)
+            return NULL;
+        ListNode *head = new ListNode(vec[0]);
+        ListNode *last = head;
+        for (int i = 1; i < vec.size(); i++) {
+            ListNode *tmp = new ListNode(vec[i]);
+            last->next = tmp;
+            last = tmp;
         }
-        else {
+        last->next = NULL;
+        return head;
+    }
+
+private:
+    ListNode *mergeTwoLists(ListNode *a, ListNode *b) {
+        if (a == NULL) return b;
+        if (b == NULL) return a;
+        ListNode *head, *curr, *a_idx = a, *b_idx = b;
+        if (a_idx->val < b_idx->val) {
+            head = a_idx;
+            if (a_idx != NULL) a_idx = a_idx->next;
+        } else {
             head = b_idx;
-            if (b_idx->next!=NULL) b_idx = b_idx->next;
+            if (b_idx != NULL) b_idx = b_idx->next;
         }
         curr = head;
-        while(a_idx->next != NULL && b_idx->next != NULL) {
-            if (a_idx->val < b->val) {
+        while (a_idx != NULL && b_idx != NULL) {
+            if (a_idx->val < b_idx->val) {
                 curr->next = a_idx;
                 curr = curr->next;
                 a_idx = a_idx->next;
-            }
-            else {
+            } else {
                 curr->next = b_idx;
                 curr = curr->next;
                 b_idx = b_idx->next;
             }
         }
-        while(a_idx->next != NULL) {
+        while (a_idx != NULL) {
             curr->next = a_idx;
             curr = curr->next;
             a_idx = a_idx->next;
         }
-        while(b_idx->next != NULL) {
+        while (b_idx != NULL) {
             curr->next = b_idx;
             curr = curr->next;
             b_idx = b_idx->next;
@@ -73,28 +97,19 @@ private:
 };
 
 int main() {
-    ListNode *t1 = new ListNode(1);
-    ListNode *t2 = new ListNode(4);
-    ListNode *t3 = new ListNode(5);
-    t1->next = t2;
-    t2->next = t3;
-    t3->next = NULL;
-    ListNode *t4 = new ListNode(1);
-    ListNode *t5 = new ListNode(3);
-    ListNode *t6 = new ListNode(4);
-    t4->next = t5;
-    t5->next = t6;
-    t6->next = NULL;
-    ListNode *t7 = new ListNode(2);
-    ListNode *t8 = new ListNode(6);
-    t7->next = t8;
-    t8->next = NULL;
     Solution s = Solution();
-    vector<ListNode*> input = {t1, t4, t7};
+    ListNode *t1 = s.getListFromVec({1, 4, 5});
+    ListNode *t2 = s.getListFromVec({1, 3, 4});
+    ListNode *t3 = s.getListFromVec({2, 6});
+    //ListNode *t4 = s.getListFromVec({-8});
+    //ListNode *t5 = s.getListFromVec({});
+    //ListNode *t6 = s.getListFromVec({-9, -6, -5, -4, -2, 2, 3});
+    //ListNode *t7 = s.getListFromVec({-3, -3, -2, -1, 0});
+    vector<ListNode *> input = {t1, t2, t3};
     ListNode *merged = s.mergeKLists(input);
-    while(merged != NULL) {
-        cout<<merged->val<<"->";
+    while (merged != NULL) {
+        cout << merged->val << "->";
         merged = merged->next;
     }
-    cout<<"NULL"<<endl;
+    cout << "NULL" << endl;
 }
