@@ -72,6 +72,8 @@ private:
     bool exchanged = false;
 
     void getExchangePos(TreeNode *root) {
+        //first use in-order traversal to find the position where the value is at the wrong order
+        //i.e., smaller than the current largest one
         if (root->left != NULL) getExchangePos(root->left);
         if (root->val < curr_largest) {
             toExchangePos = root;
@@ -82,6 +84,7 @@ private:
     }
 
     void doExchange(TreeNode *root) {
+        //a second in-order traversal to do the exchange.
         if (root->left != NULL) doExchange(root->left);
         if (root->val > toExchangePos->val && exchanged == false) {
             //cout<<"the position being exchanged is "<<root->val<<endl;
