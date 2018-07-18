@@ -12,4 +12,7 @@
 #include <set>
 #include <queue>
 #include <iostream>
+#include <ctime>
+#include <random>
+#include <chrono>
 #endif LEETCODE_HEADERS_H
