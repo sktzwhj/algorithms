@@ -7,7 +7,7 @@
 using namespace std;
 
 //my solution is actually too redundant. the greedy strategy can be simple. first flip the rows whose first digit is not 1
-//then flip the columns whose 1s are less than 0s. 
+//then flip the columns whose 1s are less than 0s.
 class Solution {
 public:
     int matrixScore(vector<vector<int>> &A) {
