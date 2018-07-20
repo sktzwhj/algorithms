@@ -15,6 +15,10 @@
 #include <ctime>
 #include <random>
 #include <chrono>
+#include <fstream>
+#include <sstream>
+#include <cstdlib>
+using namespace std;
 
 struct TreeNode {
     int val;
@@ -23,7 +27,22 @@ struct TreeNode {
     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
 };
 
+void printTree(TreeNode *root) {
+    queue<TreeNode *> q;
+    q.push(root);
+    vector<int> tree;
+    while (!q.empty()) {
+        TreeNode *curr = q.front();
+        q.pop();
+        if (curr != NULL) tree.push_back(curr->val);
+        else tree.push_back(-1);
+        if (curr != NULL) q.push(curr->left);
+        if (curr != NULL) q.push(curr->right);
+    }
+    for (auto ele:tree) cout << ele << " ";
+    cout << endl;
 
+}
 
 TreeNode *GenerateTreeFromArray(vector<int> &array) {
     //this function is used to generate test cases
