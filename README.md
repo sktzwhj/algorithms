@@ -1,3 +1,3 @@
-#Algorithms
+# Algorithms
 
-My Leetcode solutions. Stay tuned. 
+My Leetcode solutions.  
