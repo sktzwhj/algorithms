@@ -4,7 +4,7 @@
 
 #include "headers.h"
 
-//find and grow. I write it a bit long but easy to understand. 
+//find and grow. I write it a bit long but easy to understand.
 
 class Solution {
 public:
