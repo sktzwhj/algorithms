@@ -81,4 +81,29 @@ TreeNode *GenerateTreeFromArray(vector<int> &array) {
     }
     return tree_nodes[0];
 }
+
+struct ListNode {
+    int val;
+    ListNode *next;
+    ListNode(int x) : val(x), next(NULL) {}
+};
+
+ListNode* generateListFromArray(vector<int>& input) {
+    ListNode* head = new ListNode(input.size());
+    for (int i = 0; i < input.size() - 1; ++i) {
+        head[i].next = &head[i + 1];
+        head[i].val = input[i];
+    }
+    head[input.size() - 1].val = input[input.size() - 1];
+    head[input.size() - 1].next = NULL;
+    return head;
+}
+
+void printList(ListNode* head) {
+    while (head != NULL) {
+        cout<<head->val<<" ";
+        head = head->next;
+    }
+    cout<<endl;
+}
 #endif LEETCODE_HEADERS_H
